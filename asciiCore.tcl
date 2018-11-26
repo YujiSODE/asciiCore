@@ -14,6 +14,9 @@
 ##===================================================================
 set auto_noexec 1;
 package require Tcl 8.6;
+#=== lPairwise.tcl (Yuji SODE, 2018); the MIT License: https://gist.github.com/YujiSODE/0d520f3e178894cd1f2fee407bbd3e16 ===
+#It returns pairwise combination of given list
+proc lPairwise {list} {set n [llength $list];set i 1;set LIST {};while {$n>1} {set i 1;while {$i<$n} {lappend LIST [list [lindex $list 0] [lindex $list $i]];incr i 1;};set list [lrange $list 1 end];set n [llength $list];};return $LIST;};
 #*** <namespace ::tcl::mathfunc> ***
 #=== lSum.tcl (Yuji SODE, 2018): https://gist.github.com/YujiSODE/1f9a4e2729212691972b196a76ba9bd0 ===
 #Additional mathematical functions for Tcl expressions that returns sum of given list
@@ -200,11 +203,10 @@ namespace eval ::asciiCore {
 	};
 };
 ################
-# a test code
 proc ::asciiCore::show {{n 10} {delay 250}} {
 	# - $n: model simulated for n-1 time steps, i.e., 0th step is the initial step
 	# - $delay: delay in milliseconds with default value of 250
-	variable LOG;variable nStep;
+	variable LOG;variable nStep;variable dW;variable dH;
 	set i 0;
 	set n [expr {$n>0?$n:10}];
 	#Clearing display
@@ -219,10 +221,7 @@ proc ::asciiCore::show {{n 10} {delay 250}} {
 		incr nStep 1;
 	};
 	puts stdout "\n\#===================================================================";
-	####################
-	variable dW;variable dH;variable D;
-	puts stdout "(dW,dH)=($dW,$dH)\nD=$D\nsteps: [expr {$nStep-1}]";
-	####################
+	puts stdout "unit scales: ${dW} x ${dH}\nsteps: [expr {$nStep-1}]";
 };
 #it shows simulation result
 proc ::asciiCore::preview {{delay 250}} {
@@ -237,20 +236,29 @@ proc ::asciiCore::preview {{delay 250}} {
 	};
 	puts stdout "\n\#===================================================================";
 	puts stdout "steps: [expr {$n-1}]";
-	variable idMap;
-	parray idMap;
 };
 #it outputs JavaScript code as js file
-proc ::asciiCore::output_JS {{filename {}} {delay 250}} {
+proc ::asciiCore::output_JS {{name {}} {delay 250}} {
+	# - $name: a name for output JavaScript function with default value of "asciiCore[numbers]"
+	# - $delay: delay in milliseconds with default value of 250
 	variable LOG;
-	set filename [expr {[llength $filename]>0?"$filename.js":"asciiCore[clock seconds].js"}];
-	set logJS [lmap e $LOG {list "\`$e\`";}]
-	set logJS "\[[join $logJS ,]\]";
-	############
-	puts stdout $logJS;
-	puts stdout $filename;
-	############
-	return $filename;
+	set logJS {};
+	set js {};
+	#--- name ---
+	set name [expr {[llength $name]>0?$name:"asciiCore[clock seconds]"}];
+	set name [string map {\x20 _ \t _ . _ , _} $name];
+	#--- JavaScript function ---
+	set js "var\x20$name=function()";
+	set logJS [join [lmap e $LOG {string map {\n \\n} "\"$e\"";}] ,];
+	append js "\{return\x20\[$logJS\]\;\}\;";
+	#--- output ---
+	set C [open "$name.js" w];
+	fconfigure $C -encoding utf-8;
+	puts -nonewline $C $js;
+	close $C;unset C;
+	unset logJS js;
+	puts stdout "$name.js";
+	return "$name.js";
 };
 #*** License ***
 #MIT License
