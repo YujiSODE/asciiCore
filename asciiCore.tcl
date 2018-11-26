@@ -14,9 +14,6 @@
 ##===================================================================
 set auto_noexec 1;
 package require Tcl 8.6;
-#=== lPairwise.tcl (Yuji SODE, 2018); the MIT License: https://gist.github.com/YujiSODE/0d520f3e178894cd1f2fee407bbd3e16 ===
-#It returns pairwise combination of given list
-proc lPairwise {list} {set n [llength $list];set i 1;set LIST {};while {$n>1} {set i 1;while {$i<$n} {lappend LIST [list [lindex $list 0] [lindex $list $i]];incr i 1;};set list [lrange $list 1 end];set n [llength $list];};return $LIST;};
 #*** <namespace ::tcl::mathfunc> ***
 #=== lSum.tcl (Yuji SODE, 2018): https://gist.github.com/YujiSODE/1f9a4e2729212691972b196a76ba9bd0 ===
 #Additional mathematical functions for Tcl expressions that returns sum of given list
@@ -69,6 +66,9 @@ namespace eval ::asciiCore {
 	variable aX;array set aX {};
 	variable aY;array set aY {};
 	#### Procedures ####
+	#=== lPairwise.tcl (Yuji SODE, 2018); the MIT License: https://gist.github.com/YujiSODE/0d520f3e178894cd1f2fee407bbd3e16 ===
+	#It returns pairwise combination of given list
+	proc lPairwise {list} {set n [llength $list];set i 1;set LIST {};while {$n>1} {set i 1;while {$i<$n} {lappend LIST [list [lindex $list 0] [lindex $list $i]];incr i 1;};set list [lrange $list 1 end];set n [llength $list];};return $LIST;};
 	#it clears map
 	proc clear {} {
 		variable map {};variable idMap;variable mW;variable mH;
@@ -237,10 +237,9 @@ proc ::asciiCore::preview {{delay 250}} {
 	puts stdout "\n\#===================================================================";
 	puts stdout "steps: [expr {$n-1}]";
 };
-#it outputs JavaScript code as js file
-proc ::asciiCore::output_JS {{name {}} {delay 250}} {
+#it outputs log as JavaScript code
+proc ::asciiCore::output_JS {{name {}}} {
 	# - $name: a name for output JavaScript function with default value of "asciiCore[numbers]"
-	# - $delay: delay in milliseconds with default value of 250
 	variable LOG;
 	set logJS {};
 	set js {};
