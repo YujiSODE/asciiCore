@@ -215,13 +215,63 @@ namespace eval ::asciiCore {
 	#it calculates next step
 	proc step {} {
 		variable Char;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable aX;variable aY;variable D;variable idMap;variable nextVx1;variable nextVy1;variable nextVx2;variable nextVy2;
-			foreach e [array names Char] {
-				set vX($e) [expr {lSum("$vX($e) $aX($e)")}];
-				set vY($e) [expr {lSum("$vY($e) $aY($e)")}];
-				set X($e) [expr {lSum("$X($e) $vX($e)")}];
-				set Y($e) [expr {lSum("$Y($e) $vY($e)")}];
-				::asciiCore::plot $e;
+			#foreach e [array names Char] {
+			#	set vX($e) [expr {lSum("$vX($e) $aX($e)")}];
+			#	set vY($e) [expr {lSum("$vY($e) $aY($e)")}];
+			#	set X($e) [expr {lSum("$X($e) $vX($e)")}];
+			#	set Y($e) [expr {lSum("$Y($e) $vY($e)")}];
+			#	::asciiCore::plot $e;
+			#};
+		#######################################################
+		#collision
+		foreach e [array names idMap] {
+			#id list
+			set IDs $idMap($e);
+			#--- conditions ---
+			#n<2 => 1 element
+			#n<3 => 2 elements
+			#other => 3 or more elements
+			if {[length $IDs]<2} {
+				set vX($IDs) [expr {lSum("$vX($IDs) $aX($IDs)")}];
+				set vY($IDs) [expr {lSum("$vY($IDs) $aY($IDs)")}];
+				set X($IDs) [expr {lSum("$X($IDs) $vX($IDs)")}];
+				set Y($IDs) [expr {lSum("$Y($IDs) $vY($IDs)")}];
+				::asciiCore::plot $IDs;
+			} elseif {[llength $IDs]<3} {
+				set ID1 [lindex $IDs 0];
+				set ID2 [lindex $IDs 1];
+				set col [::asciiCore::ifCollision $ID1 $ID2];
+				expr {!!$col?[::asciiCore::getCollision $ID1 $ID2]:0};
+				expr {!!$col?[set vX($ID1) $nextVx1]:0};
+				expr {!!$col?[set vY($ID1) $nextVy1]:0};
+				set X($ID1) [expr {lSum("$X($ID1) $vX($ID1)")}];
+				set Y($ID1) [expr {lSum("$Y($ID1) $vY($ID1)")}];
+				::asciiCore::plot $ID1;
+				expr {!!$col?[set vX($ID2) $nextVx2]:0};
+				expr {!!$col?[set vY($ID2) $nextVy2]:0};
+				set X($ID2) [expr {lSum("$X($ID2) $vX($ID2)")}];
+				set Y($ID2) [expr {lSum("$Y($ID2) $vY($ID2)")}];
+				::asciiCore::plot $ID2;
+			} else {
+				foreach pair [lPairwise $IDs] {
+					set ID1 [lindex $pair 0];
+					set ID2 [lindex $pair 1];
+					set col [::asciiCore::ifCollision $ID1 $ID2];
+					expr {!!$col?[::asciiCore::getCollision $ID1 $ID2]:0};
+					expr {!!$col?[set vX($ID1) $nextVx1]:0};
+					expr {!!$col?[set vY($ID1) $nextVy1]:0};
+					set X($ID1) [expr {lSum("$X($ID1) $vX($ID1)")}];
+					set Y($ID1) [expr {lSum("$Y($ID1) $vY($ID1)")}];
+					::asciiCore::plot $ID1;
+					expr {!!$col?[set vX($ID2) $nextVx2]:0};
+					expr {!!$col?[set vY($ID2) $nextVy2]:0};
+					set X($ID2) [expr {lSum("$X($ID2) $vX($ID2)")}];
+					set Y($ID2) [expr {lSum("$Y($ID2) $vY($ID2)")}];
+					::asciiCore::plot $ID2;
+				};
 			};
+		};
+		#######################################################
 	};
 	#it resizes map size
 	proc resize {w h} {
