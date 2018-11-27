@@ -302,8 +302,8 @@ namespace eval ::asciiCore {
 		::asciiCore::clear;
 	};
 };
-################
-proc ::asciiCore::show {{n 10} {delay 250}} {
+#it runs simulation
+proc ::asciiCore::run {{n 10} {delay 250}} {
 	# - $n: model simulated for n-1 time steps, i.e., 0th step is the initial step
 	# - $delay: delay in milliseconds with default value of 250
 	variable LOG;variable nStep;variable dW;variable dH;variable epsilon;
