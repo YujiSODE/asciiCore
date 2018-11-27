@@ -1,9 +1,13 @@
 source -encoding utf-8 ./asciiCore.tcl;
+::asciiCore::resize 20 20;
+#################
 ::asciiCore::setObject @ 1;
 ::asciiCore::setObject + 1 {1 0} {-1 0};
-::asciiCore::setObject * 1 {5 0} {-1 1};
-::asciiCore::setObject * 1 {0 5} {1 -1};
-::asciiCore::show 5 1000;
+::asciiCore::setObject 1 1 {15 10} {-1 1};
+::asciiCore::setObject 2 1 {10 15} {1 -1};
+::asciiCore::setObject 3 1 {9 2} {-1 0};
+#################
+::asciiCore::show 3 1000;
 after 250;
-::asciiCore::preview;
+parray ::asciiCore::idMap;
 ::asciiCore::output_JS;
