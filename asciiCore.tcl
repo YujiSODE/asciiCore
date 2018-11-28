@@ -63,8 +63,9 @@ namespace eval ::asciiCore {
 	#-------------------------------------+
 	#parameter format:`value(object_id)=v`|
 	#-------------------------------------+
-	#objects and their mass
+	#objects and their density and mass
 	variable Char;array set Char {};
+	variable Rho;array set Rho {};
 	variable M;array set M {};
 	#positions
 	variable X;array set X {};
@@ -109,7 +110,7 @@ namespace eval ::asciiCore {
 	};
 	#it plots an object on map
 	proc plot {id} {
-		# - $id: object id
+		# - $id: object ID
 		variable map;variable idMap;variable mW;variable mH;variable Char;variable X;variable Y;
 		#map coordinates
 		set x [::asciiCore::xCoord $X($id)];
@@ -117,20 +118,23 @@ namespace eval ::asciiCore {
 		expr {!($x<0)&&!($x>$mW-1)&&!($y<0)&&!($y>$mH-1)?[lappend idMap($x,$y) $id]:0};
 		return [expr {!($x<0)&&!($x>$mW-1)&&!($y<0)&&!($y>$mH-1)?[lset map "$y $x" $Char($id)]:$map}];
 	};
-	#it defines an object and returns its id
-	proc setObject {char m {xy0 {0.0 0.0}} {v0 {0.0 0.0}} {a0 {0.0 0.0}}} {
+	#it defines an object and returns its ID
+	proc setObject {char rho {xy0 {0.0 0.0}} {v0 {0.0 0.0}} {a0 {0.0 0.0}}} {
 		# - $char: an object character
-		# - $m: object mass
+		# - $rho: object density
 		# - $xy0: a list of initial object position with format of `{x y}`
 		# - $v0: a list of initial object velocities with format of `{vx vy}`
 		# - $a0: a list of initial object accelerations with format of `{ax ay}`
-		variable Char;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;
+		variable Char;variable Rho;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable dW;variable dH;
 		#ID is an object id
 		set ID [format %x [expr {round(rand()*10**10)}]];
+		#V is approximated object volume
+		set V [expr {double($dW*$dH)}];
 		#=== array parameters for objects ===
-		#------ objects and their mass ------
+		#------ objects and their density and mass ------
 		array set Char "$ID $char";
-		array set M "$ID [expr {double($m)}]";
+		array set Rho "$ID [expr {double($rho)}]";
+		array set M "$ID [expr {double($Rho($ID)*$V)}]";
 		#------ position ------
 		array set X "$ID [expr {double([lindex $xy0 0])}]";
 		array set Y "$ID [expr {double([lindex $xy0 1])}]";
@@ -143,15 +147,16 @@ namespace eval ::asciiCore {
 		::asciiCore::plot $ID;
 		return $ID;
 	};
-	#it removes objects with given id list
-	#all objects are removed if id list is omitted
+	#it removes objects with given ID list
+	#all objects are removed if ID list is omitted
 	proc remove {{idList {}}} {
-		# - $idList: a list of object id
-		variable Char;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;
+		# - $idList: a list of object ID
+		variable Char;variable Rho;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;
 		set idList [expr {![llength $idList]?[array names Char]:$idList}];
 		foreach e $idList {
 			array unset Char $e;
 			array unset M $e;
+			array unset Rho $e;
 			array unset X $e;
 			array unset Y $e;
 			array unset vX $e;
@@ -163,6 +168,7 @@ namespace eval ::asciiCore {
 	#it returns if there is collision
 	#returned value is true when there is collision
 	proc ifCollision {id1 id2} {
+		# - $id1 and $id2: object IDs
 		variable X;variable Y;variable D;
 		set x1 $X($id1);set x2 $X($id2);
 		set y1 $Y($id1);set y2 $Y($id2);
@@ -170,6 +176,7 @@ namespace eval ::asciiCore {
 	};
 	#it estimates velocity vectors after collision
 	proc getCollision {id1 id2} {
+		# - $id1 and $id2: object IDs
 		variable M;variable X;variable Y;variable vX;variable vY;variable D;variable epsilon;variable nextVx1;variable nextVy1;variable nextVx2;variable nextVy2;
 		set x1 $X($id1);set x2 $X($id2);
 		set y1 $Y($id1);set y2 $Y($id2);
@@ -280,15 +287,19 @@ namespace eval ::asciiCore {
 	#it sets new unit scales for map
 	proc setScales {dw dh} {
 		# - $dw and $dh: positive numbers for map scales
-		variable dW;variable dH;variable Char;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable D;
+		variable dW;variable dH;variable Char;variable Rho;variable M;variable D;
 		set dW [expr {double($dw>0?$dw:$dW)}];
 		set dH [expr {double($dh>0?$dh:$dH)}];
+		#V is approximated object volume
+		set V [expr {double($dW*$dH)}];
 		#new value for diameter
 		set D [expr {min($dW,$dH)}];
 		#clearing map
 		::asciiCore::clear;
 		#replot objects on map
 		foreach e [array names Char] {
+			#new value for mass
+			set M($e) [expr {double($Rho($e)*$V)}];
 			::asciiCore::plot $e;
 		};
 		return "$dW $dH";
@@ -301,7 +312,21 @@ namespace eval ::asciiCore {
 		::asciiCore::setScales 1.0 1.0;
 		::asciiCore::clear;
 	};
+	#it returns object information
+	#information of all objects are returned if ID list is omitted
+	proc objectInfo {{idList {}}} {
+		# - $idList: a list of object ID
+		variable Char;variable Rho;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;
+		set idList [expr {![llength $idList]?[array names Char]:$idList}];
+		#info is information list
+		set info [list [list ID Char Rho M X Y vX vY aX aY]];
+		foreach e $idList {
+			lappend info [list $e $Char($e) $Rho($e) $M($e) $X($e) $Y($e) $vX($e) $vY($e) $aX($e) $aY($e)];
+		};
+		return $info;
+	};
 };
+##===================================================================
 #it runs simulation
 proc ::asciiCore::run {{n 10} {delay 250}} {
 	# - $n: model simulated for n-1 time steps, i.e., 0th step is the initial step
