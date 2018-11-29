@@ -184,7 +184,7 @@ namespace eval ::asciiCore {
 		set vy1 $vY($id1);set vy2 $vY($id2);
 		#=== distance ===
 		set d [expr {lSum("$x1**2 $x2**2 $y1**2 $y2**2 -2*$x1*$x2 -2*$y1*$y2")}];
-		set d [expr {$d!=0.0?$d:$epsilon*100}];
+		set d [expr {$d!=0.0?$d:$epsilon*10}];
 		#=== unit normal vectors ===
 		set normalX1 [expr {lSum("$x2 -$x1")/$d}];
 		set normalY1 [expr {lSum("$y2 -$y1")/$d}];
@@ -217,18 +217,21 @@ namespace eval ::asciiCore {
 		set nextVy1 [expr {lSum("$normY2 $tanY1")}];
 		set nextVx2 [expr {lSum("$normX1 $tanX2")}];
 		set nextVy2 [expr {lSum("$normY1 $tanY2")}];
+		#=== removing variables ===
+		unset x1 x2 y1 y2 vx1 vx2 vy1 vy2;
 		return "$nextVx1 $nextVy1 $nextVx2 $nextVy2";
 	};
 	#it calculates next step
 	proc step {} {
 		variable Char;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable aX;variable aY;variable D;variable nextVx1;variable nextVy1;variable nextVx2;variable nextVy2;
-		set IDs [lPairwise [array names Char]];
+		set idList [array names Char];
+		set IDs [::asciiCore::lPairwise $idList];
 		set nId [llength $IDs];
 		#--- conditions ---
-		#!(nId!=0) => an element
-		#nId<3 => 2 elements
+		#$nId<1 => an element
+		#$nId<3 => 2 elements
 		#other => 3 or more elements
-		if {!($nId!=0)} {
+		if {$nId<1} {
 			set vX($IDs) [expr {lSum("$vX($IDs) $aX($IDs)")}];
 			set vY($IDs) [expr {lSum("$vY($IDs) $aY($IDs)")}];
 			set X($IDs) [expr {lSum("$X($IDs) $vX($IDs)")}];
@@ -242,7 +245,6 @@ namespace eval ::asciiCore {
 			expr {!!$col?[set vY($ID1) $nextVy1]:0};
 			set X($ID1) [expr {lSum("$X($ID1) $vX($ID1)")}];
 			set Y($ID1) [expr {lSum("$Y($ID1) $vY($ID1)")}];
-				::asciiCore::plot $ID1;
 			expr {!!$col?[set vX($ID2) $nextVx2]:0};
 			expr {!!$col?[set vY($ID2) $nextVy2]:0};
 			set X($ID2) [expr {lSum("$X($ID2) $vX($ID2)")}];
@@ -264,9 +266,11 @@ namespace eval ::asciiCore {
 			};
 		};
 		#plotting objects
-		foreach e [array names Char] {
+		foreach e $idList {
 			::asciiCore::plot $e;
 		};
+		#=== removing variables ===
+		unset idList IDs nId;
 	};
 	#it resizes map size
 	proc resize {w h} {
@@ -382,8 +386,8 @@ proc ::asciiCore::output_JS {{name {}}} {
 	fconfigure $C -encoding utf-8;
 	puts -nonewline $C $js;
 	close $C;unset C;
+	#=== removing variables ===
 	unset logJS js;
-	puts stdout "$name.js";
 	return "$name.js";
 };
 #*** License ***
