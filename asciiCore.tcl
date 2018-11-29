@@ -11,6 +11,11 @@
 #
 #=== Description ===
 #It generates map list and displays this list.
+#asciiCore_reference.txt
+#
+#=== [Reference] ===
+# - Tanaka, K. 2017. JavaScript game programming. Future Coders, Impress R&D
+#   ISBN: 978-4-8443-9755-7
 ##===================================================================
 set auto_noexec 1;
 package require Tcl 8.6;
