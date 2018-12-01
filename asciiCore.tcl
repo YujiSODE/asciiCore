@@ -43,7 +43,7 @@ namespace eval ::asciiCore {
 	#initial unit scales for map
 	variable dW 1.0;
 	variable dH 1.0;
-	#initial value for diameter
+	#=== initial value for diameter ===
 	variable D [expr {min($dW,$dH)}];
 	#initial values for map
 	set i 0;
@@ -51,19 +51,24 @@ namespace eval ::asciiCore {
 		lappend map "_[string repeat "\x20_" [expr {$mW-1}]]";
 		incr i 1;
 	};
-	#log
+	#=== log ===
 	variable LOG {};
 	variable nStep 0;
-	#epsilon
+	#=== epsilon ===
 	variable epsilon 1.0;
 	while {1.0+$epsilon!=1.0} {
 		set epsilon [expr {$epsilon/2}];
 	};
-	#variables used for collision
+	#=== environmental accelerations ===
+	variable EnvX;array set EnvX {};
+	variable EnvY;array set EnvY {};
+	#-------------------------------------------------------------------
+	#=== variables used for collision ===
 	variable nextVx1 0.0;
 	variable nextVy1 0.0;
 	variable nextVx2 0.0;
 	variable nextVy2 0.0;
+	#-------------------------------------------------------------------
 	#=== array parameters for objects ===
 	#-------------------------------------+
 	#parameter format:`value(object_id)=v`|
@@ -81,10 +86,14 @@ namespace eval ::asciiCore {
 	#accelerations
 	variable aX;array set aX {};
 	variable aY;array set aY {};
+	#coefficient of restitution
+	variable CR;array set CR {};
 	#### Procedures ####
+	#-------------------------------------------------------------------
 	#=== lPairwise.tcl (Yuji SODE, 2018); the MIT License: https://gist.github.com/YujiSODE/0d520f3e178894cd1f2fee407bbd3e16 ===
 	#It returns pairwise combination of given list
 	proc lPairwise {list} {set n [llength $list];set i 1;set LIST {};while {$n>1} {set i 1;while {$i<$n} {lappend LIST [list [lindex $list 0] [lindex $list $i]];incr i 1;};set list [lrange $list 1 end];set n [llength $list];};return $LIST;};
+	#-------------------------------------------------------------------
 	#it clears map
 	proc clear {} {
 		variable map {};variable idMap;variable mW;variable mH;
@@ -123,14 +132,41 @@ namespace eval ::asciiCore {
 		expr {!($x<0)&&!($x>$mW-1)&&!($y<0)&&!($y>$mH-1)?[lappend idMap($x,$y) $id]:0};
 		return [expr {!($x<0)&&!($x>$mW-1)&&!($y<0)&&!($y>$mH-1)?[lset map "$y $x" $Char($id)]:$map}];
 	};
+	#it set an environmental acceleration in the horizontal direction
+	proc setEnvX {name value} {
+		variable EnvX;
+		set value [expr {double($value)}];
+		array set EnvX "$name $value";
+		return "$name $value";
+	};
+	#it set an environmental acceleration in the vertical direction
+	proc setEnvY {name value} {
+		variable EnvY;
+		set value [expr {double($value)}];
+		array set EnvY "$name $value";
+		return "$name $value";
+	};
+	#it returns total of environmental acceleration in the horizontal direction
+	proc getEnvX {} {
+		variable EnvX;
+		set E [array names EnvX];
+		return [expr {[llength $E]>0?lSum([lmap e $E {list $EnvX($e);}]):0.0}];
+	};
+	#it returns total of environmental acceleration in the vertical direction
+	proc getEnvY {} {
+		variable EnvY;
+		set E [array names EnvY];
+		return [expr {[llength $E]>0?lSum([lmap e $E {list $EnvY($e);}]):0.0}];
+	};
 	#it defines an object and returns its ID
-	proc setObject {char rho {xy0 {0.0 0.0}} {v0 {0.0 0.0}} {a0 {0.0 0.0}}} {
+	proc setObject {char rho {xy0 {0.0 0.0}} {v0 {0.0 0.0}} {a0 {0.0 0.0}} {cr 1.0}} {
 		# - $char: an object character
 		# - $rho: object density
 		# - $xy0: a list of initial object position with format of `{x y}`
 		# - $v0: a list of initial object velocities with format of `{vx vy}`
 		# - $a0: a list of initial object accelerations with format of `{ax ay}`
-		variable Char;variable Rho;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable dW;variable dH;
+		# - $cr: coefficient of restitution
+		variable Char;variable Rho;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable CR;variable dW;variable dH;
 		#ID is an object id
 		set ID [format %x [expr {round(rand()*10**10)}]];
 		#V is approximated object volume
@@ -148,6 +184,8 @@ namespace eval ::asciiCore {
 		array set vY "$ID [expr {double([lindex $v0 1])}]";
 		array set aX "$ID [expr {double([lindex $a0 0])}]";
 		array set aY "$ID [expr {double([lindex $a0 1])}]";
+		#------ coefficient of restitution ------
+		array set CR "$ID [expr {double($cr)}]";
 		#=== initial plot of the object ===
 		::asciiCore::plot $ID;
 		return $ID;
@@ -156,7 +194,7 @@ namespace eval ::asciiCore {
 	#all objects are removed if ID list is omitted
 	proc remove {{idList {}}} {
 		# - $idList: a list of object ID
-		variable Char;variable Rho;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;
+		variable Char;variable Rho;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable CR;
 		set idList [expr {![llength $idList]?[array names Char]:$idList}];
 		foreach e $idList {
 			array unset Char $e;
@@ -168,6 +206,7 @@ namespace eval ::asciiCore {
 			array unset vY $e;
 			array unset aX $e;
 			array unset aY $e;
+			array unset CR $e;
 		};
 	};
 	#it returns if there is collision
@@ -182,14 +221,19 @@ namespace eval ::asciiCore {
 	#it estimates velocity vectors after collision
 	proc getCollision {id1 id2} {
 		# - $id1 and $id2: object IDs
-		variable M;variable X;variable Y;variable vX;variable vY;variable D;variable epsilon;variable nextVx1;variable nextVy1;variable nextVx2;variable nextVy2;
+		variable M;variable X;variable Y;variable vX;variable vY;variable CR;variable D;variable epsilon;variable nextVx1;variable nextVy1;variable nextVx2;variable nextVy2;
 		set x1 $X($id1);set x2 $X($id2);
 		set y1 $Y($id1);set y2 $Y($id2);
 		set vx1 $vX($id1);set vx2 $vX($id2);
 		set vy1 $vY($id1);set vy2 $vY($id2);
-		#=== distance ===
+		#mass
+		set m1 $M($id1);set m2 $M($id2);
+		#coefficient of restitution
+		set cr [expr {lSum("$CR($id1) $CR($id2)")/2}];
+		#distance
 		set d [expr {lSum("$x1**2 $x2**2 $y1**2 $y2**2 -2*$x1*$x2 -2*$y1*$y2")}];
 		set d [expr {$d!=0.0?$d:$epsilon*10}];
+		#-------------------------------------------------------------------
 		#=== unit normal vectors ===
 		set normalX1 [expr {lSum("$x2 -$x1")/$d}];
 		set normalY1 [expr {lSum("$y2 -$y1")/$d}];
@@ -217,18 +261,64 @@ namespace eval ::asciiCore {
 		set tanY1 [expr {$tangentY1*$dotTan1}];
 		set tanX2 [expr {$tangentX2*$dotTan2}];
 		set tanY2 [expr {$tangentY2*$dotTan2}];
-		#=== next values for velocities ===
-		set nextVx1 [expr {lSum("$normX2 $tanX1")}];
-		set nextVy1 [expr {lSum("$normY2 $tanY1")}];
-		set nextVx2 [expr {lSum("$normX1 $tanX2")}];
-		set nextVy2 [expr {lSum("$normY1 $tanY2")}];
+		#=== next vectors ===
+		set vx1_2 [expr {lSum("$normX2 $tanX1")}];
+		set vy1_2 [expr {lSum("$normY2 $tanY1")}];
+		set vx2_2 [expr {lSum("$normX1 $tanX2")}];
+		set vy2_2 [expr {lSum("$normY1 $tanY2")}];
+		#vector sizes
+		set v1_2 [expr {lSum("$vx1_2**2 $vy1_2**2")}];
+		set v2_2 [expr {lSum("$vx2_2**2 $vy2_2**2")}];
+		#next unit vectors
+		set unitVx1 [expr {$vx1_2/$v1_2}];
+		set unitVy1 [expr {$vy1_2/$v1_2}];
+		set unitVx2 [expr {$vx2_2/$v2_2}];
+		set unitVy2 [expr {$vy2_2/$v2_2}];
+		#-------------------------------------------------------------------
+		#=== next velocities ===
+		set v12X [expr {lSum("$vx1 -$vx2")}];
+		set v12Y [expr {lSum("$vy1 -$vy2")}];
+		set v21X [expr {lSum("$vx2 -$vx1")}];
+		set v21Y [expr {lSum("$vy2 -$vy1")}];
+		set m12 [expr {lSum("$m1 $m2")}];
+		#--- next velocities: u1 and u2 ---
+		#u1
+		set uX1 [expr {lSum("$v21X*$m2*$cr $m1*$vx1 $m2*$vx2")/$m12}];
+		set uY1 [expr {lSum("$v21Y*$m2*$cr $m1*$vy1 $m2*$vy2")/$m12}];
+		#vector size
+		set u1 [expr {lSum("$uX1**2 $uY1**2")}];
+		#u2
+		set uX2 [expr {lSum("$v12X*$m1*$cr $m1*$vx1 $m2*$vx2")/$m12}];
+		set uY2 [expr {lSum("$v12Y*$m1*$cr $m1*$vy1 $m2*$vy2")/$m12}];
+		#vector size
+		set u2 [expr {lSum("$uX1**2 $uY1**2")}];
+		#-------------------------------------------------------------------
+		#=== next values ===
+		set nextVx1 [expr {$unitVx1*$u1}];
+		set nextVy1 [expr {$unitVy1*$u1}];
+		set nextVx2 [expr {$unitVx2*$u2}];
+		set nextVy2 [expr {$unitVy2*$u2}];
 		#=== removing variables ===
-		unset x1 x2 y1 y2 vx1 vx2 vy1 vy2;
+		unset x1 x2 y1 y2 vx1 vx2 vy1 vy2 m1 m2 cr d;
+		#-------------------------------------------------------------------
+		unset normalX1 normalY1 normalX2 normalY2;
+		unset tangentX1 tangentY1 tangentX2 tangentY2;
+		unset dotNorm1 dotNorm2 dotTan1 dotTan2;
+		unset normX1 normY1 normX2 normY2;
+		unset tanX1 tanY1 tanX2 tanY2;
+		unset vx1_2 vy1_2 vx2_2 vy2_2 v1_2 v2_2 unitVx1 unitVy1 unitVx2 unitVy2;
+		unset v12X v12Y v21X v21Y m12 uX1 uY1 u1 uX2 uY2 u2;
+		#-------------------------------------------------------------------
 		return "$nextVx1 $nextVy1 $nextVx2 $nextVy2";
 	};
 	#it calculates next step
 	proc step {} {
+		variable mW;variable mH;variable dW;variable dH;
 		variable Char;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable aX;variable aY;variable D;variable nextVx1;variable nextVy1;variable nextVx2;variable nextVy2;
+		#max width and height
+		set maxW [expr {double($mW)*$dW}];
+		set maxH [expr {double($mH)*$dH}];
+		#list of all IDs
 		set idList [array names Char];
 		set IDs [::asciiCore::lPairwise $idList];
 		set nId [llength $IDs];
@@ -270,12 +360,12 @@ namespace eval ::asciiCore {
 				set Y($ID2) [expr {lSum("$Y($ID2) $vY($ID2)")}];
 			};
 		};
-		#plotting objects
+		#=== plotting and removing objects ===
 		foreach e $idList {
-			::asciiCore::plot $e;
+			expr {$maxW<$X($e)||$maxH<$Y($e)||$X($e)<0||$Y($e)<0?[::asciiCore::remove $e]:[::asciiCore::plot $e]};
 		};
 		#=== removing variables ===
-		unset idList IDs nId;
+		unset maxW maxH idList IDs nId;
 	};
 	#it resizes map size
 	proc resize {w h} {
