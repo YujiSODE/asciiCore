@@ -228,7 +228,6 @@ namespace eval ::asciiCore {
 			array unset Isolation $e;
 		};
 	};
-############# To do #########################################
 	#it returns if there is collision
 	#returned value is true when there is collision
 	proc ifCollision {id1 id2} {
@@ -236,9 +235,9 @@ namespace eval ::asciiCore {
 		variable X;variable Y;variable D;
 		set x1 $X($id1);set x2 $X($id2);
 		set y1 $Y($id1);set y2 $Y($id2);
-		return [expr {lSum("${x1}**2 ${x2}**2 ${y1}**2 ${y2}**2 -2*${x1}*${x2} -2*${y1}*${y2} -${D}**2")<0?1:0}];
+		set d [expr {lSum("$x1**2 $x2**2 $y1**2 $y2**2 -2*$x1*$x2 -2*$y1*$y2")}];
+		return [expr {!(($d-$D**2)>0)}];
 	};
-############# To do #########################################
 	#it estimates velocity vectors after collision
 	proc getCollision {id1 id2} {
 		# - $id1 and $id2: object IDs
@@ -253,7 +252,7 @@ namespace eval ::asciiCore {
 		set cr [expr {lSum("$CR($id1) $CR($id2)")/2}];
 		#distance
 		set d [expr {lSum("$x1**2 $x2**2 $y1**2 $y2**2 -2*$x1*$x2 -2*$y1*$y2")}];
-		set d [expr {$d!=0.0?$d:$epsilon*10}];
+		set d [expr {$d!=0.0?$d:$epsilon}];
 		#-------------------------------------------------------------------
 		#=== unit normal vectors ===
 		set normalX1 [expr {lSum("$x2 -$x1")/$d}];
@@ -290,6 +289,9 @@ namespace eval ::asciiCore {
 		#vector sizes
 		set v1_2 [expr {lSum("$vx1_2**2 $vy1_2**2")}];
 		set v2_2 [expr {lSum("$vx2_2**2 $vy2_2**2")}];
+		#when vector size is 0
+		set v1_2 [expr {$v1_2!=0.0?$v1_2:$epsilon}];
+		set v2_2 [expr {$v2_2!=0.0?$v2_2:$epsilon}];
 		#next unit vectors
 		set unitVx1 [expr {$vx1_2/$v1_2}];
 		set unitVy1 [expr {$vy1_2/$v1_2}];
@@ -302,6 +304,8 @@ namespace eval ::asciiCore {
 		set v21X [expr {lSum("$vx2 -$vx1")}];
 		set v21Y [expr {lSum("$vy2 -$vy1")}];
 		set m12 [expr {lSum("$m1 $m2")}];
+		#when total mass is 0
+		set m12 [expr {$m12!=0.0?$m12:$epsilon}];
 		#--- next velocities: v1=>u1 and v2=>u2 ---
 		#u1
 		set uX1 [expr {lSum("$v21X*$m2*$cr $m1*$vx1 $m2*$vx2")/$m12}];
