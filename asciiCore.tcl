@@ -117,11 +117,13 @@ namespace eval ::asciiCore {
 	#it returns horizontal coordinate
 	proc xCoord {x} {
 		variable dW;
+		set x [expr {double($x)}];
 		return [expr {wide(floor($x/$dW))}];
 	};
 	#it returns vertical coordinate
 	proc yCoord {y} {
 		variable dH;
+		set y [expr {double($y)}];
 		return [expr {wide(floor($y/$dH))}];
 	};
 	#it plots an object on map
@@ -195,13 +197,13 @@ namespace eval ::asciiCore {
 		return $ID;
 	};
 	#it makes given object isolated
-	proc setIsolate {id} {
+	proc setIsolated {id} {
 		# - $id: object ID
 		variable Isolation;
 		array set Isolation "$id [expr {!0}]";
 	};
 	#it makes given object non-isolated
-	proc unsetIsolate {id} {
+	proc unsetIsolated {id} {
 		# - $id: object ID
 		variable Isolation;
 		array set Isolation "$id [expr {!1}]";
@@ -226,6 +228,7 @@ namespace eval ::asciiCore {
 			array unset Isolation $e;
 		};
 	};
+############# To do #########################################
 	#it returns if there is collision
 	#returned value is true when there is collision
 	proc ifCollision {id1 id2} {
@@ -233,8 +236,9 @@ namespace eval ::asciiCore {
 		variable X;variable Y;variable D;
 		set x1 $X($id1);set x2 $X($id2);
 		set y1 $Y($id1);set y2 $Y($id2);
-		return [expr {lSum("$x1**2 $x2**2 $y1**2 $y2**2 -2*$x1*$x2 -2*$y1*$y2 -$D**2")<0?1:0}];
+		return [expr {lSum("${x1}**2 ${x2}**2 ${y1}**2 ${y2}**2 -2*${x1}*${x2} -2*${y1}*${y2} -${D}**2")<0?1:0}];
 	};
+############# To do #########################################
 	#it estimates velocity vectors after collision
 	proc getCollision {id1 id2} {
 		# - $id1 and $id2: object IDs
@@ -298,7 +302,7 @@ namespace eval ::asciiCore {
 		set v21X [expr {lSum("$vx2 -$vx1")}];
 		set v21Y [expr {lSum("$vy2 -$vy1")}];
 		set m12 [expr {lSum("$m1 $m2")}];
-		#--- next velocities: u1 and u2 ---
+		#--- next velocities: v1=>u1 and v2=>u2 ---
 		#u1
 		set uX1 [expr {lSum("$v21X*$m2*$cr $m1*$vx1 $m2*$vx2")/$m12}];
 		set uY1 [expr {lSum("$v21Y*$m2*$cr $m1*$vy1 $m2*$vy2")/$m12}];
@@ -339,52 +343,47 @@ namespace eval ::asciiCore {
 		set IDs [::asciiCore::lPairwise $idList];
 		set nId [llength $IDs];
 		#environmental accelerations
-		set xEnv [::asciiCore::getEnvX];
-		set yEnv [::asciiCore::getEnvY];
+		#set xEnv [::asciiCore::getEnvX];
+		#set yEnv [::asciiCore::getEnvY];
 		#--- conditions ---
 		#$nId<1 => an element
 		#$nId<3 => 2 elements
 		#other => 3 or more elements
 		if {$nId<1} {
-			set vX($IDs) [expr {lSum("$vX($IDs) $aX($IDs) $xEnv")}];
-			set vY($IDs) [expr {lSum("$vY($IDs) $aY($IDs) $yEnv")}];
-			set X($IDs) [expr {lSum("$X($IDs) $vX($IDs)")}];
-			set Y($IDs) [expr {lSum("$Y($IDs) $vY($IDs)")}];
+			set vX($idList) [expr {lSum("$vX($idList) $aX($idList)")}];
+			set vY($idList) [expr {lSum("$vY($idList) $aY($idList)")}];
 		} elseif {$nId<3} {
+			set IDs [string map {\{ {} \} {}} $IDs];
+			set IDs [split $IDs \x20];
 			set ID1 [lindex $IDs 0];
 			set ID2 [lindex $IDs 1];
 			set col [::asciiCore::ifCollision $ID1 $ID2];
 			expr {!!$col?[::asciiCore::getCollision $ID1 $ID2]:0};
-			set vX($ID1) [expr {!!$col?lSum("$nextVx1 $aX($ID1) $xEnv"):lSum("$vX($ID1) $aX($ID1) $xEnv")}];
-			set vY($ID1) [expr {!!$col?lSum("$nextVy1 $aY($ID1) $yEnv"):lSum("$vY($ID1) $aY($ID1) $yEnv")}];
-			set X($ID1) [expr {lSum("$X($ID1) $vX($ID1)")}];
-			set Y($ID1) [expr {lSum("$Y($ID1) $vY($ID1)")}];
-			set vX($ID2) [expr {!!$col?lSum("$nextVx2 $aX($ID2) $xEnv"):lSum("$vX($ID2) $aX($ID2) $xEnv")}];
-			set vY($ID2) [expr {!!$col?lSum("$nextVy2 $aY($ID2) $yEnv"):lSum("$vY($ID2) $aY($ID2) $yEnv")}];
-			set X($ID2) [expr {lSum("$X($ID2) $vX($ID2)")}];
-			set Y($ID2) [expr {lSum("$Y($ID2) $vY($ID2)")}];
+			set vX($ID1) [expr {!!$col?lSum("$nextVx1 $aX($ID1)"):lSum("$vX($ID1) $aX($ID1)")}];
+			set vY($ID1) [expr {!!$col?lSum("$nextVy1 $aY($ID1)"):lSum("$vY($ID1) $aY($ID1)")}];
+			set vX($ID2) [expr {!!$col?lSum("$nextVx2 $aX($ID2)"):lSum("$vX($ID2) $aX($ID2)")}];
+			set vY($ID2) [expr {!!$col?lSum("$nextVy2 $aY($ID2)"):lSum("$vY($ID2) $aY($ID2)")}];
 		} else {
 			foreach e $IDs {
+				set e [string map {\{ {} \} {}} $e];
 				set ID1 [lindex $e 0];
 				set ID2 [lindex $e 1];
 				set col [::asciiCore::ifCollision $ID1 $ID2];
 				expr {!!$col?[::asciiCore::getCollision $ID1 $ID2]:0};
-				set vX($ID1) [expr {!!$col?lSum("$nextVx1 $aX($ID1) $xEnv"):lSum("$vX($ID1) $aX($ID1) $xEnv")}];
-				set vY($ID1) [expr {!!$col?lSum("$nextVy1 $aY($ID1) $yEnv"):lSum("$vY($ID1) $aY($ID1) $yEnv")}];
-				set X($ID1) [expr {lSum("$X($ID1) $vX($ID1)")}];
-				set Y($ID1) [expr {lSum("$Y($ID1) $vY($ID1)")}];
-				set vX($ID2) [expr {!!$col?lSum("$nextVx2 $aX($ID2) $xEnv"):lSum("$vX($ID2) $aX($ID2) $xEnv")}];
-				set vY($ID2) [expr {!!$col?lSum("$nextVy2 $aY($ID2) $yEnv"):lSum("$vY($ID2) $aY($ID2) $yEnv")}];
-				set X($ID2) [expr {lSum("$X($ID2) $vX($ID2)")}];
-				set Y($ID2) [expr {lSum("$Y($ID2) $vY($ID2)")}];
+				set vX($ID1) [expr {!!$col?lSum("$nextVx1 $aX($ID1)"):lSum("$vX($ID1) $aX($ID1)")}];
+				set vY($ID1) [expr {!!$col?lSum("$nextVy1 $aY($ID1)"):lSum("$vY($ID1) $aY($ID1)")}];
+				set vX($ID2) [expr {!!$col?lSum("$nextVx2 $aX($ID2)"):lSum("$vX($ID2) $aX($ID2)")}];
+				set vY($ID2) [expr {!!$col?lSum("$nextVy2 $aY($ID2)"):lSum("$vY($ID2) $aY($ID2)")}];
 			};
 		};
-		#=== plotting and removing objects ===
+		#=== plotting objects ===
 		foreach e $idList {
-			expr {$maxW<$X($e)||$maxH<$Y($e)||$X($e)<0||$Y($e)<0?[::asciiCore::remove $e]:[::asciiCore::plot $e]};
+			set X($e) [expr {lSum("$X($e) $vX($e)")}];
+			set Y($e) [expr {lSum("$Y($e) $vY($e)")}];
+			::asciiCore::plot $e;
 		};
 		#=== removing variables ===
-		unset maxW maxH idList IDs nId xEnv yEnv;
+		#unset maxW maxH idList IDs nId xEnv yEnv;
 	};
 	#it resizes map size
 	proc resize {w h} {
