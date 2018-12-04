@@ -1,5 +1,5 @@
 # asciiCore
-Particle simulation in ascii art.  
+Simple particle simulation in ascii art.  
 GitHub: https://github.com/YujiSODE/asciiCore  
 >Copyright (c) 2018 Yuji SODE \<yuji.sode@gmail.com\>  
 >This software is released under the MIT License.  
