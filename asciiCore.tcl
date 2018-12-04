@@ -199,7 +199,7 @@ namespace eval ::asciiCore {
 		::asciiCore::plot $ID;
 		return $ID;
 	};
-	#it makes given object be isolated from other objects
+	#it makes given object isolated from other objects
 	proc setIsolated {id} {
 		# - $id: object ID
 		variable Iso;
@@ -211,7 +211,7 @@ namespace eval ::asciiCore {
 		variable Iso;
 		array set Iso "$id [expr {!1}]";
 	};
-	#it makes given object be free from environmental accelerations
+	#it makes given object free from environmental accelerations
 	proc setFree {id} {
 		# - $id: object ID
 		variable Free;
