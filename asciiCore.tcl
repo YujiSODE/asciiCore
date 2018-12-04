@@ -239,6 +239,7 @@ namespace eval ::asciiCore {
 		return [expr {!(($d-$D**2)>0)}];
 	};
 	#it estimates velocity vectors after collision
+	#To do: vx1=0&&vy1=0&&vx2=0&&vy2=0
 	proc getCollision {id1 id2} {
 		# - $id1 and $id2: object IDs
 		variable M;variable X;variable Y;variable vX;variable vY;variable CR;variable D;variable epsilon;variable nextVx1;variable nextVy1;variable nextVx2;variable nextVy2;
@@ -246,6 +247,14 @@ namespace eval ::asciiCore {
 		set y1 $Y($id1);set y2 $Y($id2);
 		set vx1 $vX($id1);set vx2 $vX($id2);
 		set vy1 $vY($id1);set vy2 $vY($id2);
+		#-------------------------------------------------------------------
+		#when both velocities are 0: (vx,vy)=(0.0,0.0)
+		set zeroVxy1 [expr {$vx1!=0.0||$vy1!=0.0}];
+		set zeroVxy2 [expr {$vx2!=0.0||$vy2!=0.0}];
+		set vx1 [expr {$zeroVxy1?$vx1:$epsilon}];
+		set vy1 [expr {$zeroVxy1?$vy1:$epsilon}];
+		set vx2 [expr {$zeroVxy2?$vx2:$epsilon}];
+		set vy2 [expr {$zeroVxy2?$vy2:$epsilon}];
 		#mass
 		set m1 $M($id1);set m2 $M($id2);
 		#coefficient of restitution
@@ -324,8 +333,9 @@ namespace eval ::asciiCore {
 		set nextVx2 [expr {$unitVx2*$u2}];
 		set nextVy2 [expr {$unitVy2*$u2}];
 		#=== removing variables ===
-		unset x1 x2 y1 y2 vx1 vx2 vy1 vy2 m1 m2 cr d;
+		unset x1 x2 y1 y2 vx1 vx2 vy1 vy2;
 		#-------------------------------------------------------------------
+		unset m1 m2 cr d zeroVxy1 zeroVxy2;
 		unset normalX1 normalY1 normalX2 normalY2;
 		unset tangentX1 tangentY1 tangentX2 tangentY2;
 		unset dotNorm1 dotNorm2 dotTan1 dotTan2;
@@ -347,8 +357,8 @@ namespace eval ::asciiCore {
 		set IDs [::asciiCore::lPairwise $idList];
 		set nId [llength $IDs];
 		#environmental accelerations
-		#set xEnv [::asciiCore::getEnvX];
-		#set yEnv [::asciiCore::getEnvY];
+		set xEnv [::asciiCore::getEnvX];
+		set yEnv [::asciiCore::getEnvY];
 		#--- conditions ---
 		#$nId<1 => an element
 		#$nId<3 => 2 elements
@@ -380,14 +390,15 @@ namespace eval ::asciiCore {
 				set vY($ID2) [expr {!!$col?lSum("$nextVy2 $aY($ID2)"):lSum("$vY($ID2) $aY($ID2)")}];
 			};
 		};
-		#=== plotting objects ===
+		#=== plotting or removing objects ===
 		foreach e $idList {
 			set X($e) [expr {lSum("$X($e) $vX($e)")}];
 			set Y($e) [expr {lSum("$Y($e) $vY($e)")}];
-			::asciiCore::plot $e;
+			expr {!($X($e)<0)&&!($X($e)>$mW-1)&&!($Y($e)<0)&&!($Y($e)>$mH-1)?[::asciiCore::plot $e]:[::asciiCore::remove $e]};
+			#::asciiCore::plot $e;
 		};
 		#=== removing variables ===
-		#unset maxW maxH idList IDs nId xEnv yEnv;
+		unset maxW maxH idList IDs nId xEnv yEnv;
 	};
 	#it resizes map size
 	proc resize {w h} {
@@ -502,7 +513,7 @@ proc ::asciiCore::output_JS {{name {}}} {
 	set js {};
 	#--- name ---
 	set name [expr {[llength $name]>0?$name:"asciiCore[clock seconds]"}];
-	set name [string map {\x20 _ \t _ . _ , _} $name];
+	set name [string map {\x20 _ \t _ . _ , _ \: _ \; _} $name];
 	#--- JavaScript function ---
 	set js "var\x20$name=function()";
 	set logJS [join [lmap e $LOG {string map {\n \\n} "\"$e\"";}] ,];
