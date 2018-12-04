@@ -5,13 +5,12 @@
 #
 #	This software is released under the MIT License.
 ##===================================================================
-#Particle simulation in ascii art.
+#Simple particle simulation in ascii art.
 #=== Synopsis ===
 #namespace `::asciiCore`
 #
 #=== Description ===
 #It generates map list and displays this list.
-#asciiCore_reference.txt
 #
 #=== [Reference] ===
 # - Tanaka, K. 2017. JavaScript game programming. Future Coders, Impress R&D
@@ -88,8 +87,10 @@ namespace eval ::asciiCore {
 	variable aY;array set aY {};
 	#coefficient of restitution
 	variable CR;array set CR {};
-	#isolation
-	variable Isolation;array set Isolation {};
+	#isolation from other objects
+	variable Iso;array set Iso {};
+	#free from environmental accelerations
+	variable Free;array set Free {};
 	#### Procedures ####
 	#-------------------------------------------------------------------
 	#=== lPairwise.tcl (Yuji SODE, 2018); the MIT License: https://gist.github.com/YujiSODE/0d520f3e178894cd1f2fee407bbd3e16 ===
@@ -170,7 +171,7 @@ namespace eval ::asciiCore {
 		# - $v0: a list of initial object velocities with format of `{vx vy}`
 		# - $a0: a list of initial object accelerations with format of `{ax ay}`
 		# - $cr: coefficient of restitution
-		variable Char;variable Rho;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable CR;variable Isolation;variable dW;variable dH;
+		variable Char;variable Rho;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable CR;variable Iso;variable Free;variable dW;variable dH;
 		#ID is an object id
 		set ID [format %x [expr {round(rand()*10**10)}]];
 		#V is approximated object volume
@@ -190,29 +191,43 @@ namespace eval ::asciiCore {
 		array set aY "$ID [expr {double([lindex $a0 1])}]";
 		#------ coefficient of restitution ------
 		array set CR "$ID [expr {double($cr)}]";
-		#------ isolation ------
-		array set Isolation "$ID [expr {!1}]";
+		#------ isolation from other objects ------
+		array set Iso "$ID [expr {!1}]";
+		#------ free from environmental accelerations ------
+		array set Free "$ID [expr {!1}]";
 		#=== initial plot of the object ===
 		::asciiCore::plot $ID;
 		return $ID;
 	};
-	#it makes given object isolated
+	#it makes given object isolated from other objects
 	proc setIsolated {id} {
 		# - $id: object ID
-		variable Isolation;
-		array set Isolation "$id [expr {!0}]";
+		variable Iso;
+		array set Iso "$id [expr {!0}]";
 	};
-	#it makes given object non-isolated
+	#it unsets isolation attribute of given object
 	proc unsetIsolated {id} {
 		# - $id: object ID
-		variable Isolation;
-		array set Isolation "$id [expr {!1}]";
+		variable Iso;
+		array set Iso "$id [expr {!1}]";
+	};
+	#it makes given object free from environmental accelerations
+	proc setFree {id} {
+		# - $id: object ID
+		variable Free;
+		array set Free "$id [expr {!0}]";
+	};
+	#it unsets free attribute of given object
+	proc unsetFree {id} {
+		# - $id: object ID
+		variable Free;
+		array set Free "$id [expr {!1}]";
 	};
 	#it removes objects with given ID list
 	#all objects are removed if ID list is omitted
 	proc remove {{idList {}}} {
 		# - $idList: a list of object ID
-		variable Char;variable Rho;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable CR;variable Isolation;
+		variable Char;variable Rho;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable CR;variable Iso;variable Free;
 		set idList [expr {![llength $idList]?[array names Char]:$idList}];
 		foreach e $idList {
 			array unset Char $e;
@@ -225,7 +240,8 @@ namespace eval ::asciiCore {
 			array unset aX $e;
 			array unset aY $e;
 			array unset CR $e;
-			array unset Isolation $e;
+			array unset Iso $e;
+			array unset Free $e;
 		};
 	};
 	#it returns if there is collision
@@ -239,7 +255,6 @@ namespace eval ::asciiCore {
 		return [expr {!(($d-$D**2)>0)}];
 	};
 	#it estimates velocity vectors after collision
-	#To do: vx1=0&&vy1=0&&vx2=0&&vy2=0
 	proc getCollision {id1 id2} {
 		# - $id1 and $id2: object IDs
 		variable M;variable X;variable Y;variable vX;variable vY;variable CR;variable D;variable epsilon;variable nextVx1;variable nextVy1;variable nextVx2;variable nextVy2;
@@ -328,10 +343,10 @@ namespace eval ::asciiCore {
 		set u2 [expr {lSum("$uX1**2 $uY1**2")}];
 		#-------------------------------------------------------------------
 		#=== next values ===
-		set nextVx1 [expr {$unitVx1*$u1}];
-		set nextVy1 [expr {$unitVy1*$u1}];
-		set nextVx2 [expr {$unitVx2*$u2}];
-		set nextVy2 [expr {$unitVy2*$u2}];
+		set nextVx1 [expr {$zeroVxy1&&$zeroVxy2?$unitVx1*$u1:0.0}];
+		set nextVy1 [expr {$zeroVxy1&&$zeroVxy2?$unitVy1*$u1:0.0}];
+		set nextVx2 [expr {$zeroVxy1&&$zeroVxy2?$unitVx2*$u2:0.0}];
+		set nextVy2 [expr {$zeroVxy1&&$zeroVxy2?$unitVy2*$u2:0.0}];
 		#=== removing variables ===
 		unset x1 x2 y1 y2 vx1 vx2 vy1 vy2;
 		#-------------------------------------------------------------------
@@ -348,7 +363,7 @@ namespace eval ::asciiCore {
 	};
 	#it calculates next step
 	proc step {} {
-		variable mW;variable mH;variable dW;variable dH;variable Char;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable aX;variable aY;variable Isolation;variable D;variable nextVx1;variable nextVy1;variable nextVx2;variable nextVy2;variable EnvX;variable EnvY;
+		variable mW;variable mH;variable dW;variable dH;variable Char;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable aX;variable aY;variable Iso;variable Free;variable D;variable nextVx1;variable nextVy1;variable nextVx2;variable nextVy2;variable EnvX;variable EnvY;
 		#max width and height
 		set maxW [expr {double($mW)*$dW}];
 		set maxH [expr {double($mH)*$dH}];
@@ -361,41 +376,40 @@ namespace eval ::asciiCore {
 		set yEnv [::asciiCore::getEnvY];
 		#--- conditions ---
 		#$nId<1 => an element
-		#$nId<3 => 2 elements
-		#other => 3 or more elements
-		if {$nId<1} {
-			set vX($idList) [expr {lSum("$vX($idList) $aX($idList)")}];
-			set vY($idList) [expr {lSum("$vY($idList) $aY($idList)")}];
-		} elseif {$nId<3} {
-			set IDs [string map {\{ {} \} {}} $IDs];
-			set IDs [split $IDs \x20];
+		#1<$nId<3 => 2 elements
+		#$nId>3 => 3 or more elements
+		if {$nId>1&&$nId<3} {
 			set ID1 [lindex $IDs 0];
 			set ID2 [lindex $IDs 1];
 			set col [::asciiCore::ifCollision $ID1 $ID2];
 			expr {!!$col?[::asciiCore::getCollision $ID1 $ID2]:0};
-			set vX($ID1) [expr {!!$col?lSum("$nextVx1 $aX($ID1)"):lSum("$vX($ID1) $aX($ID1)")}];
-			set vY($ID1) [expr {!!$col?lSum("$nextVy1 $aY($ID1)"):lSum("$vY($ID1) $aY($ID1)")}];
-			set vX($ID2) [expr {!!$col?lSum("$nextVx2 $aX($ID2)"):lSum("$vX($ID2) $aX($ID2)")}];
-			set vY($ID2) [expr {!!$col?lSum("$nextVy2 $aY($ID2)"):lSum("$vY($ID2) $aY($ID2)")}];
-		} else {
+			set vX($ID1) [expr {!!$col?$nextVx1:$vX($ID1)}];
+			set vY($ID1) [expr {!!$col?$nextVy1:$vY($ID1)}];
+			set vX($ID2) [expr {!!$col?$nextVx2:$vX($ID2)}];
+			set vY($ID2) [expr {!!$col?$nextVy2:$vY($ID2)}];
+		} elseif {$nId>3} {
 			foreach e $IDs {
-				set e [string map {\{ {} \} {}} $e];
 				set ID1 [lindex $e 0];
 				set ID2 [lindex $e 1];
 				set col [::asciiCore::ifCollision $ID1 $ID2];
 				expr {!!$col?[::asciiCore::getCollision $ID1 $ID2]:0};
-				set vX($ID1) [expr {!!$col?lSum("$nextVx1 $aX($ID1)"):lSum("$vX($ID1) $aX($ID1)")}];
-				set vY($ID1) [expr {!!$col?lSum("$nextVy1 $aY($ID1)"):lSum("$vY($ID1) $aY($ID1)")}];
-				set vX($ID2) [expr {!!$col?lSum("$nextVx2 $aX($ID2)"):lSum("$vX($ID2) $aX($ID2)")}];
-				set vY($ID2) [expr {!!$col?lSum("$nextVy2 $aY($ID2)"):lSum("$vY($ID2) $aY($ID2)")}];
+				set vX($ID1) [expr {!!$col?$nextVx1:$vX($ID1)}];
+				set vY($ID1) [expr {!!$col?$nextVy1:$vY($ID1)}];
+				set vX($ID2) [expr {!!$col?$nextVx2:$vX($ID2)}];
+				set vY($ID2) [expr {!!$col?$nextVy2:$vY($ID2)}];
 			};
 		};
 		#=== plotting or removing objects ===
 		foreach e $idList {
+			set vX($e) [expr {lSum("$vX($e) $aX($e)")}];
+			set vY($e) [expr {lSum("$vY($e) $aY($e)")}];
+			#--- environmental accelerations ---
+			set vX($e) [expr {lSum("$vX($e) $xEnv")}];
+			set vY($e) [expr {lSum("$vY($e) $yEnv")}];
+			#--- coordinates ---
 			set X($e) [expr {lSum("$X($e) $vX($e)")}];
 			set Y($e) [expr {lSum("$Y($e) $vY($e)")}];
 			expr {!($X($e)<0)&&!($X($e)>$mW-1)&&!($Y($e)<0)&&!($Y($e)>$mH-1)?[::asciiCore::plot $e]:[::asciiCore::remove $e]};
-			#::asciiCore::plot $e;
 		};
 		#=== removing variables ===
 		unset maxW maxH idList IDs nId xEnv yEnv;
@@ -457,12 +471,12 @@ namespace eval ::asciiCore {
 	#information of all objects are returned if ID list is omitted
 	proc objectInfo {{idList {}}} {
 		# - $idList: a list of object ID
-		variable Char;variable Rho;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable Isolation;
+		variable Char;variable Rho;variable M;variable X;variable Y;variable vX;variable vY;variable aX;variable aY;variable Iso;variable Free;
 		set idList [expr {![llength $idList]?[array names Char]:$idList}];
 		#info is information list
-		set info [list [list ID Char Rho M X Y vX vY aX aY Isolation]];
+		set info [list [list ID Char Rho M X Y vX vY aX aY Isolation Free]];
 		foreach e $idList {
-			lappend info [list $e $Char($e) $Rho($e) $M($e) $X($e) $Y($e) $vX($e) $vY($e) $aX($e) $aY($e) $Isolation($e)];
+			lappend info [list $e $Char($e) $Rho($e) $M($e) $X($e) $Y($e) $vX($e) $vY($e) $aX($e) $aY($e) $Iso($e) $Free($e)];
 		};
 		return $info;
 	};
