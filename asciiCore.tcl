@@ -87,6 +87,7 @@ namespace eval ::asciiCore {
 	variable aY;array set aY {};
 	#coefficient of restitution
 	variable CR;array set CR {};
+	#<<< additional objects attributes >>>
 	#isolation from other objects
 	variable Iso;array set Iso {};
 	#free from environmental accelerations
@@ -191,37 +192,45 @@ namespace eval ::asciiCore {
 		array set aY "$ID [expr {double([lindex $a0 1])}]";
 		#------ coefficient of restitution ------
 		array set CR "$ID [expr {double($cr)}]";
-		#------ isolation from other objects ------
+		#<<< additional objects attributes >>>: isolation from other objects
 		array set Iso "$ID [expr {!1}]";
-		#------ free from environmental accelerations ------
+		#<<< additional objects attributes >>>: free from environmental accelerations
 		array set Free "$ID [expr {!1}]";
 		#=== initial plot of the object ===
 		::asciiCore::plot $ID;
 		return $ID;
 	};
+	#<<< additional objects attributes >>>
 	#it makes given object isolated from other objects
 	proc setIsolated {id} {
 		# - $id: object ID
 		variable Iso;
 		array set Iso "$id [expr {!0}]";
+		return $id;
 	};
+	#<<< additional objects attributes >>>
 	#it unsets isolation attribute of given object
 	proc unsetIsolated {id} {
 		# - $id: object ID
 		variable Iso;
 		array set Iso "$id [expr {!1}]";
+		return $id;
 	};
+	#<<< additional objects attributes >>>
 	#it makes given object free from environmental accelerations
 	proc setFree {id} {
 		# - $id: object ID
 		variable Free;
 		array set Free "$id [expr {!0}]";
+		return $id;
 	};
+	#<<< additional objects attributes >>>
 	#it unsets free attribute of given object
 	proc unsetFree {id} {
 		# - $id: object ID
 		variable Free;
 		array set Free "$id [expr {!1}]";
+		return $id;
 	};
 	#it removes objects with given ID list
 	#all objects are removed if ID list is omitted
@@ -257,7 +266,7 @@ namespace eval ::asciiCore {
 	#it estimates velocity vectors after collision
 	proc getCollision {id1 id2} {
 		# - $id1 and $id2: object IDs
-		variable M;variable X;variable Y;variable vX;variable vY;variable CR;variable D;variable epsilon;variable nextVx1;variable nextVy1;variable nextVx2;variable nextVy2;
+		variable M;variable X;variable Y;variable vX;variable vY;variable CR;variable Iso;variable D;variable epsilon;variable nextVx1;variable nextVy1;variable nextVx2;variable nextVy2;
 		set x1 $X($id1);set x2 $X($id2);
 		set y1 $Y($id1);set y2 $Y($id2);
 		set vx1 $vX($id1);set vx2 $vX($id2);
@@ -347,6 +356,11 @@ namespace eval ::asciiCore {
 		set nextVy1 [expr {$zeroVxy1&&$zeroVxy2?$unitVy1*$u1:0.0}];
 		set nextVx2 [expr {$zeroVxy1&&$zeroVxy2?$unitVx2*$u2:0.0}];
 		set nextVy2 [expr {$zeroVxy1&&$zeroVxy2?$unitVy2*$u2:0.0}];
+		#=== if objects have attribute for isolation ===
+		set nextVx1 [expr {!!$Iso($id1)?$vX($id1):$nextVx1}];
+		set nextVy1 [expr {!!$Iso($id1)?$vY($id1):$nextVy1}];
+		set nextVx2 [expr {!!$Iso($id2)?$vX($id2):$nextVx2}];
+		set nextVy2 [expr {!!$Iso($id2)?$vY($id2):$nextVy2}];
 		#=== removing variables ===
 		unset x1 x2 y1 y2 vx1 vx2 vy1 vy2;
 		#-------------------------------------------------------------------
