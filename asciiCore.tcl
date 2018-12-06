@@ -417,9 +417,7 @@ namespace eval ::asciiCore {
 			set vX($e) [expr {lSum("$vX($e) $aX($e)")}];
 			set vY($e) [expr {lSum("$vY($e) $aY($e)")}];
 			#--- environmental accelerations ---
-			#set vX($e) [expr {lSum("$vX($e) $xEnv")}];
 			set vX($e) [expr {$Free($e)?$vX($e):lSum("$vX($e) $xEnv")}];
-			#set vY($e) [expr {lSum("$vY($e) $yEnv")}];
 			set vY($e) [expr {$Free($e)?$vY($e):lSum("$vY($e) $yEnv")}];
 			#--- coordinates ---
 			set X($e) [expr {lSum("$X($e) $vX($e)")}];
