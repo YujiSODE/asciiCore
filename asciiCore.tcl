@@ -88,12 +88,11 @@ namespace eval ::asciiCore {
 	#coefficient of restitution
 	variable CR;array set CR {};
 	#<<< additional objects attributes >>>
-	#isolation from other objects
+	#isolation from collision
 	variable Iso;array set Iso {};
 	#free from environmental accelerations
 	variable Free;array set Free {};
 	#### Procedures ####
-	#-------------------------------------------------------------------
 	#=== lPairwise.tcl (Yuji SODE, 2018); the MIT License: https://gist.github.com/YujiSODE/0d520f3e178894cd1f2fee407bbd3e16 ===
 	#It returns pairwise combination of given list
 	proc lPairwise {list} {set n [llength $list];set i 1;set LIST {};while {$n>1} {set i 1;while {$i<$n} {lappend LIST [list [lindex $list 0] [lindex $list $i]];incr i 1;};set list [lrange $list 1 end];set n [llength $list];};return $LIST;};
@@ -201,7 +200,7 @@ namespace eval ::asciiCore {
 		return $ID;
 	};
 	#<<< additional objects attributes >>>
-	#it makes given object isolated from other objects
+	#it makes given object isolated from collision
 	proc setIsolated {id} {
 		# - $id: object ID
 		variable Iso;
@@ -418,8 +417,10 @@ namespace eval ::asciiCore {
 			set vX($e) [expr {lSum("$vX($e) $aX($e)")}];
 			set vY($e) [expr {lSum("$vY($e) $aY($e)")}];
 			#--- environmental accelerations ---
-			set vX($e) [expr {lSum("$vX($e) $xEnv")}];
-			set vY($e) [expr {lSum("$vY($e) $yEnv")}];
+			#set vX($e) [expr {lSum("$vX($e) $xEnv")}];
+			set vX($e) [expr {$Free($e)?$vX($e):lSum("$vX($e) $xEnv")}];
+			#set vY($e) [expr {lSum("$vY($e) $yEnv")}];
+			set vY($e) [expr {$Free($e)?$vY($e):lSum("$vY($e) $yEnv")}];
 			#--- coordinates ---
 			set X($e) [expr {lSum("$X($e) $vX($e)")}];
 			set Y($e) [expr {lSum("$Y($e) $vY($e)")}];
