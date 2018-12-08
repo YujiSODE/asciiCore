@@ -271,18 +271,19 @@ namespace eval ::asciiCore {
 		set vx1 $vX($id1);set vx2 $vX($id2);
 		set vy1 $vY($id1);set vy2 $vY($id2);
 		#-------------------------------------------------------------------
-		#when both velocities are 0: (vx,vy)=(0.0,0.0)
-		set zeroVxy1 [expr {$vx1!=0.0||$vy1!=0.0}];
-		set zeroVxy2 [expr {$vx2!=0.0||$vy2!=0.0}];
-		set vx1 [expr {$zeroVxy1?$vx1:$epsilon}];
-		set vy1 [expr {$zeroVxy1?$vy1:$epsilon}];
-		set vx2 [expr {$zeroVxy2?$vx2:$epsilon}];
-		set vy2 [expr {$zeroVxy2?$vy2:$epsilon}];
+		#true when both velocities are 0: (vx,vy)=(0.0,0.0)
+		set zeroVxy1 [expr {!double($vx1)&&!double($vy1)}];
+		set zeroVxy2 [expr {!double($vx2)&&!double($vy2)}];
+		set vx1 [expr {!!$vx1?$vx1:$epsilon}];
+		set vy1 [expr {!!$vy1?$vy1:$epsilon}];
+		set vx2 [expr {!!$vx2?$vx2:$epsilon}];
+		set vy2 [expr {!!$vy2?$vy2:$epsilon}];
+		#-------------------------------------------------------------------
 		#mass
 		set m1 $M($id1);set m2 $M($id2);
 		#coefficient of restitution
 		set cr [expr {lSum("$CR($id1) $CR($id2)")/2}];
-		#distance
+		#distance between id1 and id2
 		set d [expr {lSum("$x1**2 $x2**2 $y1**2 $y2**2 -2*$x1*$x2 -2*$y1*$y2")}];
 		set d [expr {$d!=0.0?$d:$epsilon}];
 		#-------------------------------------------------------------------
@@ -319,11 +320,11 @@ namespace eval ::asciiCore {
 		set vx2_2 [expr {lSum("$normX1 $tanX2")}];
 		set vy2_2 [expr {lSum("$normY1 $tanY2")}];
 		#vector sizes
-		set v1_2 [expr {lSum("$vx1_2**2 $vy1_2**2")}];
-		set v2_2 [expr {lSum("$vx2_2**2 $vy2_2**2")}];
+		set v1_2 [expr {sqrt(lSum("$vx1_2**2 $vy1_2**2"))}];
+		set v2_2 [expr {sqrt(lSum("$vx2_2**2 $vy2_2**2"))}];
 		#when vector size is 0
-		set v1_2 [expr {$v1_2!=0.0?$v1_2:$epsilon}];
-		set v2_2 [expr {$v2_2!=0.0?$v2_2:$epsilon}];
+		set v1_2 [expr {!!$v1_2?$v1_2:$epsilon}];
+		set v2_2 [expr {!!$v2_2?$v2_2:$epsilon}];
 		#next unit vectors
 		set unitVx1 [expr {$vx1_2/$v1_2}];
 		set unitVy1 [expr {$vy1_2/$v1_2}];
@@ -351,10 +352,11 @@ namespace eval ::asciiCore {
 		set u2 [expr {lSum("$uX1**2 $uY1**2")}];
 		#-------------------------------------------------------------------
 		#=== next values ===
-		set nextVx1 [expr {$zeroVxy1&&$zeroVxy2?$unitVx1*$u1:0.0}];
-		set nextVy1 [expr {$zeroVxy1&&$zeroVxy2?$unitVy1*$u1:0.0}];
-		set nextVx2 [expr {$zeroVxy1&&$zeroVxy2?$unitVx2*$u2:0.0}];
-		set nextVy2 [expr {$zeroVxy1&&$zeroVxy2?$unitVy2*$u2:0.0}];
+		#conditions are true when both velocities are 0: (vx,vy)=(0.0,0.0)
+		set nextVx1 [expr {$zeroVxy1&&$zeroVxy2?0.0:$unitVx1*$u1}];
+		set nextVy1 [expr {$zeroVxy1&&$zeroVxy2?0.0:$unitVy1*$u1}];
+		set nextVx2 [expr {$zeroVxy1&&$zeroVxy2?0.0:$unitVx2*$u2}];
+		set nextVy2 [expr {$zeroVxy1&&$zeroVxy2?0.0:$unitVy2*$u2}];
 		#=== if objects have attribute for isolation ===
 		set nextVx1 [expr {!!$Iso($id1)?$vX($id1):$nextVx1}];
 		set nextVy1 [expr {!!$Iso($id1)?$vY($id1):$nextVy1}];
@@ -412,7 +414,7 @@ namespace eval ::asciiCore {
 				set vY($ID2) [expr {!!$col?$nextVy2:$vY($ID2)}];
 			};
 		};
-		#=== plotting or removing objects ===
+		#=== plotting and removing objects ===
 		foreach e $idList {
 			set vX($e) [expr {lSum("$vX($e) $aX($e)")}];
 			set vY($e) [expr {lSum("$vY($e) $aY($e)")}];
