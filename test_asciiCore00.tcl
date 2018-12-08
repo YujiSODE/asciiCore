@@ -1,7 +1,7 @@
 #test_asciiCore00.tcl
 source -encoding utf-8 ./asciiCore.tcl;
 ::asciiCore::resize 20 10;
-::asciiCore::setEnvX wind [expr {-1.0*0.08}];
+::asciiCore::setEnvX wind -0.05;
 ::asciiCore::setEnvY gravity [expr {9.8*0.08}];
 #################
 ::asciiCore::setFree [::asciiCore::setIsolated [::asciiCore::setObject @ 1 {3 3} {0 0}]];
@@ -11,4 +11,4 @@ source -encoding utf-8 ./asciiCore.tcl;
 #################
 ::asciiCore::run 8 1000;
 parray ::asciiCore::idMap;
-::asciiCore::output_JS;
+::asciiCore::output_JS {asciiCore_sample00};
