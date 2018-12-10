@@ -35,7 +35,7 @@ ______
 
 ## 2. Description
 It generates map list and displays this list.  
-Command `::asciiCore::setObject` can define an object. Command `::asciiCore::remove` can remove one or more objects. Command `::asciiCore::plot` plots a defined object on map data using object ID that is returned by `::asciiCore::setObject`. Command `::asciiCore::run` runs simulation using defined objects.
+Command `::asciiCore::setObject` can define an object and returns object ID. Command `::asciiCore::remove` can remove one or more objects using object ID. Command `::asciiCore::run` runs simulation using defined objects. Map data can be cleared using command `::asciiCore::clear`.
 
 ## 3. Commands
 
