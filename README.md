@@ -34,7 +34,9 @@ ______
 - `::asciiCore::output_JS ?name?;`
 
 ## 2. Description
-It generates map list and displays this list.
+It generates map list and displays this list.  
+Command `::asciiCore::setObject` can define an object. Command `::asciiCore::remove` can remove one or more objects.  
+Command `::asciiCore::plot` plots a defined object on map data.
 
 ## 3. Commands
 
