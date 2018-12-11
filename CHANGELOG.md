@@ -3,4 +3,4 @@
 ## [Unreleased]
 
 ## Released
-## [0.1 beta] - 2018-10-04
+## [0.1 beta] - 2018-12-11
