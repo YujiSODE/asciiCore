@@ -1,6 +1,7 @@
 # asciiCore
 Simple particle simulation in ascii art.  
 GitHub: https://github.com/YujiSODE/asciiCore  
+Wiki: https://github.com/YujiSODE/asciiCore/wiki  
 >Copyright (c) 2018 Yuji SODE \<yuji.sode@gmail.com\>  
 >This software is released under the MIT License.  
 >See LICENSE or http://opensource.org/licenses/mit-license.php
@@ -34,6 +35,8 @@ It runs simulation. `n` is model simulated for n-1 time steps, i.e., 0th step is
 
 **`::asciiCore::output_JS ?name?;`**  
 It outputs log as JavaScript code. `name` is a name for output JavaScript function with default value of "asciiCore[numbers]"
+
+For detailed description see [asciiCore_Documentation](https://github.com/YujiSODE/asciiCore/wiki/asciiCore_Documentation).
 
 ## 3. Script
 #### Tcl
