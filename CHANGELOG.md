@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.1.1 beta]
 ## Added
 - `index.html`
 
