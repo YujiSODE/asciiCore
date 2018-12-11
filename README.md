@@ -44,7 +44,7 @@ Command `::asciiCore::setObject` can define an object and returns object ID. Com
 It requires Tcl 8.6+.  
 - `asciiCore.tcl`: main script in Tcl
 #### JavaScript
-- `asciiCore_preview.js`: script to show simulation result in HTML
+- `asciiCore_preview.js`: script to show simulated result in HTML
 
 ## 5. Library list
 - Sode, Y. 2018. lSum.tcl: https://gist.github.com/YujiSODE/1f9a4e2729212691972b196a76ba9bd0
