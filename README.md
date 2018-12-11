@@ -8,7 +8,7 @@ ______
 
 ## 1. Description
 It generates map list and displays this list.  
-Command `::asciiCore::setObject` can define an object and returns object ID. Command `::asciiCore::remove` can remove one or more objects using object ID.  
+Command `::asciiCore::setObject` can define an object and returns object ID. Command `::asciiCore::remove` can remove one or more objects using object ID. Simulation settings can be reset by `::asciiCore::reset;`.  
 Command `::asciiCore::run` runs simulation using defined objects. Map data can be cleared using command `::asciiCore::clear`. Simulated result can be output as a single JavaScript file using command `::asciiCore::output_JS`.
 
 ## 3. Script
