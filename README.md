@@ -36,7 +36,7 @@ It runs simulation. `n` is model simulated for n-1 time steps, i.e., 0th step is
 **`::asciiCore::output_JS ?name?;`**  
 It outputs log as JavaScript code. `name` is a name for output JavaScript function with default value of "asciiCore[numbers]"
 
-For detailed description see [asciiCore_Documentation](https://github.com/YujiSODE/asciiCore/wiki/asciiCore_Documentation).
+For detailed description see [asciiCore_Documentation01](https://github.com/YujiSODE/asciiCore/wiki/asciiCore_Documentation01).
 
 ## 3. Script
 #### Tcl
