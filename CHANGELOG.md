@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [0.1.1 beta]
+## [0.1.1 beta] -2018-12-12
 ## Added
 - `index.html`
 
